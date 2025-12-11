@@ -5,8 +5,6 @@ using System.IO;
 using System.Linq;
 using System.Text;
 using System.Windows;
-using Microsoft.Win32;
-using System.Windows.Forms;
 using SherafyVideoMaker.Models;
 using SherafyVideoMaker.Services;
 
@@ -50,10 +48,11 @@ namespace SherafyVideoMaker
 
         private void BrowseAudio(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog
+            var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "Audio files|*.wav;*.mp3;*.m4a|All files|*.*"
             };
+
             if (dialog.ShowDialog() == true)
             {
                 Settings.AudioPath = dialog.FileName;
@@ -63,10 +62,11 @@ namespace SherafyVideoMaker
 
         private void BrowseSrt(object sender, RoutedEventArgs e)
         {
-            var dialog = new OpenFileDialog
+            var dialog = new Microsoft.Win32.OpenFileDialog
             {
                 Filter = "SubRip files|*.srt|All files|*.*"
             };
+
             if (dialog.ShowDialog() == true)
             {
                 Settings.SrtPath = dialog.FileName;
@@ -76,7 +76,8 @@ namespace SherafyVideoMaker
 
         private void BrowseClipsFolder(object sender, RoutedEventArgs e)
         {
-            using var dialog = new FolderBrowserDialog();
+            using var dialog = new System.Windows.Forms.FolderBrowserDialog();
+
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 Settings.ClipsFolder = dialog.SelectedPath;
@@ -99,7 +100,7 @@ namespace SherafyVideoMaker
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Failed to load SRT: " + ex.Message);
+                System.Windows.MessageBox.Show("Failed to load SRT: " + ex.Message);
                 Log("Error while loading SRT: " + ex);
             }
         }
@@ -109,7 +110,7 @@ namespace SherafyVideoMaker
             var validation = Settings.Validate();
             if (!validation.IsValid)
             {
-                MessageBox.Show(validation.Message);
+                System.Windows.MessageBox.Show(validation.Message);
                 Log(validation.Message);
                 return;
             }
@@ -118,19 +119,19 @@ namespace SherafyVideoMaker
             {
                 if (string.IsNullOrWhiteSpace(segment.AssignedClip))
                 {
-                    MessageBox.Show($"Segment {segment.Index} has no clip assigned.");
+                    System.Windows.MessageBox.Show($"Segment {segment.Index} has no clip assigned.");
                     return;
                 }
 
                 var clipPath = Path.Combine(Settings.ClipsFolder, segment.AssignedClip);
                 if (!File.Exists(clipPath))
                 {
-                    MessageBox.Show($"Clip not found: {clipPath}");
+                    System.Windows.MessageBox.Show($"Clip not found: {clipPath}");
                     return;
                 }
             }
 
-            MessageBox.Show("Validation passed.");
+            System.Windows.MessageBox.Show("Validation passed.");
             Log("Validation passed for audio, SRT, clips, and segment assignments.");
         }
 
@@ -139,13 +140,13 @@ namespace SherafyVideoMaker
             var validation = Settings.Validate();
             if (!validation.IsValid)
             {
-                MessageBox.Show(validation.Message);
+                System.Windows.MessageBox.Show(validation.Message);
                 return;
             }
 
             if (Segments.Count == 0)
             {
-                MessageBox.Show("Load SRT before rendering.");
+                System.Windows.MessageBox.Show("Load SRT before rendering.");
                 return;
             }
 
@@ -166,16 +167,16 @@ namespace SherafyVideoMaker
                 var outputFile = _ffmpegService.ConcatAndMux(Settings, Segments.OrderBy(s => s.Index).ToList(), Log);
                 if (outputFile is not null)
                 {
-                    MessageBox.Show("Render complete!\n" + outputFile);
+                    System.Windows.MessageBox.Show("Render complete!\n" + outputFile);
                 }
                 else
                 {
-                    MessageBox.Show("Render failed. See log for details.");
+                    System.Windows.MessageBox.Show("Render failed. See log for details.");
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error during render: " + ex.Message);
+                System.Windows.MessageBox.Show("Error during render: " + ex.Message);
                 Log("Exception: " + ex);
             }
         }
@@ -196,6 +197,7 @@ namespace SherafyVideoMaker
         {
             var line = $"[{DateTime.Now:HH:mm:ss}] {message}";
             _logging.Write(line);
+
             var builder = new StringBuilder(LogText.Length + line.Length + 2);
             builder.Append(LogText);
             builder.AppendLine(line);
@@ -216,8 +218,13 @@ namespace SherafyVideoMaker
                 var durationDelta = Math.Abs(audioDuration - totalSegmentsSeconds);
                 if (durationDelta > DurationToleranceSeconds)
                 {
-                    var warning = $"Warning: SRT total duration ({totalSegmentsSeconds:0.###}s) differs from the audio master duration ({audioDuration:0.###}s) by {durationDelta:0.###}s. The audio stays as the master timeline; please verify your transcript matches the narration.";
-                    MessageBox.Show(warning, "Duration mismatch", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    var warning =
+                        $"Warning: SRT total duration ({totalSegmentsSeconds:0.###}s) differs from the audio master duration ({audioDuration:0.###}s) by {durationDelta:0.###}s. The audio stays as the master timeline; please verify your transcript matches the narration.";
+                    System.Windows.MessageBox.Show(
+                        warning,
+                        "Duration mismatch",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Warning);
                     Log(warning);
                 }
                 else
