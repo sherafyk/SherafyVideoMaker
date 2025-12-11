@@ -26,6 +26,8 @@ namespace SherafyVideoMaker
         public ObservableCollection<int> FpsOptions { get; } = new(new[] { 24, 25, 30, 60 });
         public Array FitModeOptions { get; } = Enum.GetValues(typeof(FitMode));
 
+        private const double DurationToleranceSeconds = 2.5;
+
         private string _logText = string.Empty;
         public string LogText
         {
@@ -92,6 +94,7 @@ namespace SherafyVideoMaker
                     Segments.Add(segment);
                 }
                 AutoAssignClips();
+                CheckSrtAlignmentAgainstAudio();
                 Log($"Loaded {Segments.Count} segments from SRT.");
             }
             catch (Exception ex)
@@ -153,22 +156,7 @@ namespace SherafyVideoMaker
                 Directory.CreateDirectory(Settings.FfmpegFolder);
                 _logging.EnsureLogFolder();
 
-                var totalSegmentsSeconds = Segments.Sum(s => s.Duration.TotalSeconds);
-                try
-                {
-                    var audioDuration = _ffmpegService.GetAudioDuration(Settings, Log);
-                    var durationDelta = Math.Abs(audioDuration - totalSegmentsSeconds);
-                    if (durationDelta > 3)
-                    {
-                        var warning = $"Warning: total segment duration ({totalSegmentsSeconds:0.###}s) differs from audio duration ({audioDuration:0.###}s) by {durationDelta:0.###}s.";
-                        MessageBox.Show(warning, "Duration mismatch", MessageBoxButton.OK, MessageBoxImage.Warning);
-                        Log(warning);
-                    }
-                }
-                catch (Exception ex)
-                {
-                    Log("Skipping duration alignment warning: " + ex.Message);
-                }
+                CheckSrtAlignmentAgainstAudio();
 
                 foreach (var segment in Segments.OrderBy(s => s.Index))
                 {
@@ -212,6 +200,35 @@ namespace SherafyVideoMaker
             builder.Append(LogText);
             builder.AppendLine(line);
             LogText = builder.ToString();
+        }
+
+        private void CheckSrtAlignmentAgainstAudio()
+        {
+            if (Segments.Count == 0)
+            {
+                return;
+            }
+
+            var totalSegmentsSeconds = Segments.Sum(s => s.Duration.TotalSeconds);
+            try
+            {
+                var audioDuration = _ffmpegService.GetAudioDuration(Settings, Log);
+                var durationDelta = Math.Abs(audioDuration - totalSegmentsSeconds);
+                if (durationDelta > DurationToleranceSeconds)
+                {
+                    var warning = $"Warning: SRT total duration ({totalSegmentsSeconds:0.###}s) differs from the audio master duration ({audioDuration:0.###}s) by {durationDelta:0.###}s. The audio stays as the master timeline; please verify your transcript matches the narration.";
+                    MessageBox.Show(warning, "Duration mismatch", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    Log(warning);
+                }
+                else
+                {
+                    Log($"SRT total duration is within {DurationToleranceSeconds:0.#}s of the audio duration ({audioDuration:0.###}s).");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log("Skipping duration alignment check: " + ex.Message);
+            }
         }
 
         private void OnPropertyChanged(string propertyName)
