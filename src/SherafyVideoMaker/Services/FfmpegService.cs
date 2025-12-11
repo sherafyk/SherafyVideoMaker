@@ -20,7 +20,18 @@ namespace SherafyVideoMaker.Services
             var ffmpegPath = Path.Combine(settings.FfmpegFolder, "ffmpeg.exe");
             var inputClip = Path.Combine(settings.ClipsFolder, segment.AssignedClip);
             var outputClip = Path.Combine(settings.TempFolder, $"clip_{segment.Index}.mp4");
-            var durationSeconds = segment.Duration.TotalSeconds;
+            var slot = segment.Duration.TotalSeconds;
+            var clipDuration = GetClipDuration(settings, inputClip, log);
+
+            if (clipDuration >= slot)
+            {
+                segment.Speed = 1.0;
+            }
+            else
+            {
+                segment.Speed = clipDuration / slot;
+                log("Clip shorter than slot; slowing to fit. TODO: support looping/other options.");
+            }
 
             var targetSize = GetTargetSize(settings.AspectRatio);
             var filters = $"scale={targetSize.width}:{targetSize.height}:force_original_aspect_ratio=cover,crop={targetSize.width}:{targetSize.height}";
@@ -30,7 +41,7 @@ namespace SherafyVideoMaker.Services
                 filters += $",setpts={factor}*PTS";
             }
 
-            var args = $"-y -i \"{inputClip}\" -t {durationSeconds.ToString("0.###", CultureInfo.InvariantCulture)} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+            var args = $"-y -i \"{inputClip}\" -t {slot.ToString("0.###", CultureInfo.InvariantCulture)} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
             log($"FFmpeg args (segment {segment.Index}): {args}");
             RunProcess(ffmpegPath, args, log);
         }
@@ -109,6 +120,39 @@ namespace SherafyVideoMaker.Services
             process.BeginErrorReadLine();
             process.WaitForExit();
             return process.ExitCode;
+        }
+
+        private static double GetClipDuration(ProjectSettings settings, string clipPath, Action<string> log)
+        {
+            var ffprobePath = Path.Combine(settings.FfmpegFolder, "ffprobe.exe");
+            if (!File.Exists(ffprobePath))
+            {
+                throw new FileNotFoundException("ffprobe.exe not found. Place it in the ffmpeg folder.", ffprobePath);
+            }
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = ffprobePath,
+                Arguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{clipPath}\"",
+                RedirectStandardError = true,
+                RedirectStandardOutput = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Failed to start ffprobe.");
+            var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            if (!double.TryParse(output.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out var duration))
+            {
+                var message = string.IsNullOrWhiteSpace(error) ? "Unable to parse clip duration from ffprobe." : error.Trim();
+                throw new InvalidOperationException(message);
+            }
+
+            log($"Detected clip duration: {duration.ToString("0.###", CultureInfo.InvariantCulture)}s");
+            return duration;
         }
     }
 }
