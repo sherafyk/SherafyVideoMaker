@@ -16,14 +16,10 @@ namespace SherafyVideoMaker.Services
         public IEnumerable<Segment> Parse(string path)
         {
             if (string.IsNullOrWhiteSpace(path))
-            {
                 throw new ArgumentException("SRT path is required", nameof(path));
-            }
 
             if (!File.Exists(path))
-            {
                 throw new FileNotFoundException("SRT file not found", path);
-            }
 
             var lines = File.ReadAllLines(path);
             var buffer = new List<string>();
@@ -84,7 +80,7 @@ namespace SherafyVideoMaker.Services
 
         private static TimeSpan ParseTimestamp(string text)
         {
-            return TimeSpan.ParseExact(text, "hh\\:mm\\:ss\,fff", CultureInfo.InvariantCulture);
+            return TimeSpan.ParseExact(text, @"hh\:mm\:ss\,fff", CultureInfo.InvariantCulture);
         }
     }
 }
