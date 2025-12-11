@@ -24,6 +24,7 @@ namespace SherafyVideoMaker
 
         public ObservableCollection<string> AspectOptions { get; } = new(new[] { "16:9", "9:16", "1:1" });
         public ObservableCollection<int> FpsOptions { get; } = new(new[] { 24, 25, 30, 60 });
+        public Array FitModeOptions { get; } = Enum.GetValues(typeof(FitMode));
 
         private string _logText = string.Empty;
         public string LogText
@@ -151,6 +152,23 @@ namespace SherafyVideoMaker
                 Directory.CreateDirectory(Settings.OutputFolder);
                 Directory.CreateDirectory(Settings.FfmpegFolder);
                 _logging.EnsureLogFolder();
+
+                var totalSegmentsSeconds = Segments.Sum(s => s.Duration.TotalSeconds);
+                try
+                {
+                    var audioDuration = _ffmpegService.GetAudioDuration(Settings, Log);
+                    var durationDelta = Math.Abs(audioDuration - totalSegmentsSeconds);
+                    if (durationDelta > 3)
+                    {
+                        var warning = $"Warning: total segment duration ({totalSegmentsSeconds:0.###}s) differs from audio duration ({audioDuration:0.###}s) by {durationDelta:0.###}s.";
+                        MessageBox.Show(warning, "Duration mismatch", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        Log(warning);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log("Skipping duration alignment warning: " + ex.Message);
+                }
 
                 foreach (var segment in Segments.OrderBy(s => s.Index))
                 {
