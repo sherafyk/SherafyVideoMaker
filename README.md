@@ -42,6 +42,13 @@ src/
 3. Optionally edit clip assignments or speed per row, then click **Validate**.
 4. Click **Render** to process segments and mux narration. The final video saves to `output/final_output.mp4`.
 
+## Download portable build
+- Download the latest portable zip from the GitHub Releases page (e.g., `v0.1.0-mvp`) – the asset is named `SherafyVideoMaker_Por
+table-win-x64.zip`.
+- Unzip anywhere, then launch `SherafyVideoMaker.exe`.
+- The bundle already contains `ffmpeg/ffmpeg.exe`, `ffmpeg/ffprobe.exe`, plus `temp/`, `output/`, and `logs/` folders ready for
+ use.
+
 ## Publishing a Portable Build
 Use the included PowerShell helper to create a turnkey Windows x64 package (self-contained EXE + folders):
 

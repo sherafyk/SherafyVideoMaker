@@ -23,25 +23,76 @@ namespace SherafyVideoMaker.Services
             var slot = segment.Duration.TotalSeconds;
             var clipDuration = GetClipDuration(settings, inputClip, log);
 
-            if (clipDuration >= slot)
+            var mode = segment.FitMode;
+            if (mode == FitMode.Auto)
             {
-                segment.Speed = 1.0;
+                mode = clipDuration >= slot ? FitMode.Trim : FitMode.Slow;
+                log($"Auto fit mode resolved to {mode} for segment {segment.Index}.");
             }
             else
             {
-                segment.Speed = clipDuration / slot;
-                log("Clip shorter than slot; slowing to fit. TODO: support looping/other options.");
+                log($"Using fit mode {mode} for segment {segment.Index}.");
             }
 
             var targetSize = GetTargetSize(settings.AspectRatio);
             var filters = $"scale={targetSize.width}:{targetSize.height}:force_original_aspect_ratio=cover,crop={targetSize.width}:{targetSize.height}";
-            if (Math.Abs(segment.Speed - 1.0) > 0.001)
+            var slotText = slot.ToString("0.###", CultureInfo.InvariantCulture);
+            string args;
+
+            switch (mode)
             {
-                var factor = (1.0 / segment.Speed).ToString(CultureInfo.InvariantCulture);
-                filters += $",setpts={factor}*PTS";
+                case FitMode.Trim:
+                    segment.Speed = 1.0;
+                    args = $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+                    break;
+                case FitMode.Slow:
+                    if (clipDuration < slot)
+                    {
+                        segment.Speed = clipDuration / slot;
+                        if (segment.Speed <= 0)
+                        {
+                            throw new InvalidOperationException("Calculated speed factor must be positive.");
+                        }
+
+                        filters += $",setpts={(1.0 / segment.Speed).ToString(CultureInfo.InvariantCulture)}*PTS";
+                    }
+                    else
+                    {
+                        segment.Speed = 1.0;
+                        log("Slow mode selected but clip already meets or exceeds slot length; leaving speed unchanged.");
+                    }
+
+                    args = $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+                    break;
+                case FitMode.Speed:
+                    if (clipDuration > slot)
+                    {
+                        segment.Speed = clipDuration / slot;
+                        if (segment.Speed <= 0)
+                        {
+                            throw new InvalidOperationException("Calculated speed factor must be positive.");
+                        }
+
+                        filters += $",setpts={(1.0 / segment.Speed).ToString(CultureInfo.InvariantCulture)}*PTS";
+                    }
+                    else
+                    {
+                        segment.Speed = 1.0;
+                        log("Speed mode selected but clip already fits within slot; leaving speed unchanged.");
+                    }
+
+                    args = $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+                    break;
+                case FitMode.Loop:
+                    segment.Speed = 1.0;
+                    var loopFrames = Math.Max(1, (int)Math.Ceiling(clipDuration * settings.Fps));
+                    filters = $"loop=-1:size={loopFrames}:start=0,{filters}";
+                    args = $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+                    break;
+                default:
+                    throw new InvalidOperationException($"Unknown fit mode: {mode}");
             }
 
-            var args = $"-y -i \"{inputClip}\" -t {slot.ToString("0.###", CultureInfo.InvariantCulture)} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
             log($"FFmpeg args (segment {segment.Index}): {args}");
             RunProcess(ffmpegPath, args, log);
         }
@@ -125,15 +176,36 @@ namespace SherafyVideoMaker.Services
         private static double GetClipDuration(ProjectSettings settings, string clipPath, Action<string> log)
         {
             var ffprobePath = Path.Combine(settings.FfmpegFolder, "ffprobe.exe");
+            return GetMediaDuration(ffprobePath, clipPath, log);
+        }
+
+        public double GetAudioDuration(ProjectSettings settings, Action<string> log)
+        {
+            var ffprobePath = Path.Combine(settings.FfmpegFolder, "ffprobe.exe");
+            if (string.IsNullOrWhiteSpace(settings.AudioPath))
+            {
+                throw new InvalidOperationException("Audio path is not set.");
+            }
+
+            return GetMediaDuration(ffprobePath, settings.AudioPath, log);
+        }
+
+        private static double GetMediaDuration(string ffprobePath, string mediaPath, Action<string> log)
+        {
             if (!File.Exists(ffprobePath))
             {
                 throw new FileNotFoundException("ffprobe.exe not found. Place it in the ffmpeg folder.", ffprobePath);
             }
 
+            if (!File.Exists(mediaPath))
+            {
+                throw new FileNotFoundException("Media file not found.", mediaPath);
+            }
+
             var startInfo = new ProcessStartInfo
             {
                 FileName = ffprobePath,
-                Arguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{clipPath}\"",
+                Arguments = $"-v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"{mediaPath}\"",
                 RedirectStandardError = true,
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
@@ -147,11 +219,11 @@ namespace SherafyVideoMaker.Services
 
             if (!double.TryParse(output.Trim(), NumberStyles.Any, CultureInfo.InvariantCulture, out var duration))
             {
-                var message = string.IsNullOrWhiteSpace(error) ? "Unable to parse clip duration from ffprobe." : error.Trim();
+                var message = string.IsNullOrWhiteSpace(error) ? "Unable to parse media duration from ffprobe." : error.Trim();
                 throw new InvalidOperationException(message);
             }
 
-            log($"Detected clip duration: {duration.ToString("0.###", CultureInfo.InvariantCulture)}s");
+            log($"Detected media duration: {duration.ToString("0.###", CultureInfo.InvariantCulture)}s");
             return duration;
         }
     }
