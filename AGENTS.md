@@ -843,3 +843,157 @@ Once this basic version is working, the next iterations (which we can design ste
 * **Creative Commons video search integration** (Pexels/Pixabay/Unsplash).
 * **Auto-update** (simple check against a version file on your site/GitHub).
 * **Licensing**: trial vs pro, limits by duration or clip count.
+
+---
+
+
+# 📌 Portable Release Build
+Your goal now is to have a **turnkey, portable Windows app** that you can:
+
+* Download (zip) from GitHub
+* Unzip
+* Double-click and run
+* Without installing Visual Studio or .NET SDK
+
+To make that possible, your GitHub repo needs a **published portable build** (a self-contained EXE and supporting folders).
+
+Below are **exact instructions you can send to your AI agent to produce that build**.
+
+## 🎯 **Objective**
+
+Create a **portable release build** of the `SherafyVideoMaker` project in the GitHub repository so that I can download and run it on a Windows 11 PC without needing Visual Studio or .NET installed.
+
+---
+
+## 🧩 **Requirements**
+
+1. Use the existing repo at:
+   `https://github.com/sherafyk/SherafyVideoMaker`
+2. Build a **self-contained Windows x64 portable application**.
+3. Include the **FFmpeg binaries**, `ffmpeg.exe` and `ffprobe.exe`, in a folder named `ffmpeg/` next to the EXE.
+4. Include empty (or pre-created) folders:
+
+   * `temp/`
+   * `output/`
+   * `logs/`
+5. Produce a final structure that looks like:
+
+```
+SherafyVideoMaker_Portable/
+│
+├── SherafyVideoMaker.exe
+├── ffmpeg/
+│     ├── ffmpeg.exe
+│     └── ffprobe.exe
+├── temp/
+├── output/
+├── logs/
+├── settings.json (optional)
+└── README.txt (optional usage instructions)
+```
+
+---
+
+## 🧰 **Build Instructions**
+
+DO NOT assume .NET is installed on the target machine.
+
+Use **.NET Publish** with these exact flags:
+
+```bash
+dotnet publish SherafyVideoMaker.sln \
+  -c Release \
+  -r win-x64 \
+  --self-contained true \
+  /p:PublishSingleFile=true \
+  /p:IncludeNativeLibrariesForSelfExtract=true \
+  /p:PublishTrimmed=false
+```
+
+**Explanation of flags:**
+
+* `-c Release`: build release version
+* `-r win-x64`: target 64-bit Windows
+* `--self-contained true`: include the .NET runtime so no .NET install is needed
+* `PublishSingleFile=true`: bundle the app into one EXE
+* `IncludeNativeLibrariesForSelfExtract=true`: ensures native C++ libs (if needed) are included
+* `PublishTrimmed=false`: safer for WPF apps (trimming can break reflection)
+
+---
+
+## 📦 **Post-Publish Steps**
+
+1. Copy `ffmpeg.exe` and `ffprobe.exe` into the `ffmpeg/` folder next to the published EXE.
+
+   * The recommended source for FFmpeg: any static build (e.g., from gyan.dev or BTBN builds).
+2. Ensure folders exist:
+
+   * `temp/`
+   * `output/`
+   * `logs/`
+3. Create a release ZIP with everything.
+
+Example folder layout after building:
+
+```
+publish/
+├── SherafyVideoMaker.exe
+├── ffmpeg/
+│   ├── ffmpeg.exe
+│   └── ffprobe.exe
+├── temp/
+├── output/
+└── logs/
+```
+
+---
+
+## 📌 **Release Tagging**
+
+* Create a GitHub **Release** named `v1.0-portable`
+* Upload the ZIP file
+* Include a description:
+  “Portable build of SherafyVideoMaker — no install needed — just unzip & run”
+
+---
+
+## 🧪 **Testing Instructions (on Windows 11)**
+
+After creating the release ZIP:
+
+1. Download it on a clean Windows 11 machine (no Visual Studio / .NET installed).
+2. Unzip to a folder (e.g. `D:\Apps\SVM\`).
+3. Double-click `SherafyVideoMaker.exe`.
+4. Test the basic workflow:
+
+   * Load audio (WAV/MP3)
+   * Load SRT
+   * Load clips folder
+   * Validate
+   * Render
+   * Check `output/final_output.mp4`
+
+---
+
+## 🪶 Optional Extras
+
+(Add only if you want them in the MVP portable build)
+
+* Include a small `README.txt` explaining how to run the app
+* Include FFmpeg copyright/attribution in the ZIP
+* Add a script (`run.bat`) that opens the app and checks environment
+
+---
+
+# 🏁 After the Agent Runs These Instructions
+
+Once the agent completes those build steps and uploads the compiled ZIP to GitHub (in a release):
+
+### What the user will do
+
+1. Download the ZIP from the GitHub release.
+2. Unzip it anywhere.
+3. Run it — no setup, no install — and everything just works.
+
+
+
