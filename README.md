@@ -43,10 +43,25 @@ src/
 4. Click **Render** to process segments and mux narration. The final video saves to `output/final_output.mp4`.
 
 ## Publishing a Portable Build
-1. In Visual Studio: **Build → Publish**.
-2. Target **Folder**, runtime `win-x64`, **self-contained**.
-3. After publish, copy `ffmpeg/`, `temp/`, `output/`, and `logs/` into the publish folder alongside `SherafyVideoMaker.exe`.
-4. Zip the publish folder and attach it to a GitHub release.
+Use the included PowerShell helper to create a turnkey Windows x64 package (self-contained EXE + folders):
+
+```powershell
+pwsh -File scripts/publish-portable.ps1
+```
+
+What the script does:
+- Runs `dotnet publish` with the required flags:
+  - `-c Release -r win-x64 --self-contained true /p:PublishSingleFile=true /p:IncludeNativeLibrariesForSelfExtract=true /p:PublishTrimmed=false`
+- Stages the published files in `artifacts/portable/SherafyVideoMaker_Portable`.
+- Downloads a static FFmpeg build (from [gyan.dev](https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip) by default) and copies `ffmpeg.exe` and `ffprobe.exe` into `ffmpeg/`.
+- Ensures `temp/`, `output/`, and `logs/` exist beside the EXE.
+- Produces `artifacts/SherafyVideoMaker_Portable-win-x64.zip` ready for a GitHub release.
+
+If you already have FFmpeg binaries or want to control the output location, pass parameters such as:
+
+```powershell
+pwsh -File scripts/publish-portable.ps1 -SkipFfmpegDownload -PublishDir C:\Builds\SherafyVideoMaker_Portable
+```
 
 ## Roadmap Ideas
 - Looping and advanced speed/trim options.
