@@ -8,12 +8,14 @@ namespace SherafyVideoMaker.Models
         public string AudioPath { get; set; } = string.Empty;
         public string SrtPath { get; set; } = string.Empty;
         public string ClipsFolder { get; set; } = string.Empty;
+        public string ClipUrl { get; set; } = string.Empty;
         public string AspectRatio { get; set; } = "16:9";
         public int Fps { get; set; } = 30;
         public string TempFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "temp");
         public string OutputFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "output");
         public string FfmpegFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "ffmpeg");
         public string LogFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "logs");
+        public string DownloadsFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "clips_downloads");
 
         public ValidationResult Validate()
         {
@@ -27,9 +29,12 @@ namespace SherafyVideoMaker.Models
                 return ValidationResult.Fail("Select a valid SRT file.");
             }
 
-            if (string.IsNullOrWhiteSpace(ClipsFolder) || !Directory.Exists(ClipsFolder))
+            Directory.CreateDirectory(DownloadsFolder);
+
+            if ((string.IsNullOrWhiteSpace(ClipsFolder) || !Directory.Exists(ClipsFolder))
+                && string.IsNullOrWhiteSpace(ClipUrl))
             {
-                return ValidationResult.Fail("Select a valid clips folder.");
+                return ValidationResult.Fail("Select a valid clips folder or provide a clip URL.");
             }
 
             if (Fps <= 0)

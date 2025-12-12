@@ -23,6 +23,7 @@ namespace SherafyVideoMaker.Services
 
             if (!File.Exists(inputClip))
             {
+                log($"Expected input clip missing for segment {segment.Index}: {inputClip}");
                 throw new FileNotFoundException($"Input clip for segment {segment.Index} not found.", inputClip);
             }
 

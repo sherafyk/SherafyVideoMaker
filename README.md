@@ -38,9 +38,10 @@ src/
 
 ## Usage
 1. In the app, browse for **Audio**, **SRT**, and **Clips Folder**.
-2. Choose **Aspect** and **FPS**, then click **Load SRT** to populate segments.
-3. Optionally edit clip assignments or speed per row, then click **Validate**.
-4. Click **Render** to process segments and mux narration. The final video saves to `output/final_output.mp4`.
+2. To fetch a remote clip instead, paste a Pexels/Unsplash (or any direct video) link into **Clip URL** and click **Download**. The file is saved to `clips_downloads/` next to the app and auto-assigned to the next empty segment.
+3. Choose **Aspect** and **FPS**, then click **Load SRT** to populate segments.
+4. Optionally edit clip assignments or speed per row, then click **Validate** (downloads run automatically if a URL is provided).
+5. Click **Render** to process segments and mux narration. The final video saves to `output/final_output.mp4`.
 
 ## Download portable build
 - Download the latest portable zip from the GitHub Releases page (e.g., `v0.1.0-mvp`) – the asset is named `SherafyVideoMaker_Por

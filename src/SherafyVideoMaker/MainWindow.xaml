@@ -30,6 +30,9 @@
             <TextBlock Text="Clips Folder:" Width="100" VerticalAlignment="Center" />
             <TextBox Text="{Binding Settings.ClipsFolder, UpdateSourceTrigger=PropertyChanged}" Width="380" Margin="4 0" />
             <Button Content="Browse" Width="80" Margin="6 0" Click="BrowseClipsFolder" />
+            <TextBlock Text="Clip URL:" Width="80" Margin="18 0 0 0" VerticalAlignment="Center" />
+            <TextBox Text="{Binding Settings.ClipUrl, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="4 0" />
+            <Button Content="Download" Width="100" Margin="6 0" Click="DownloadClip" />
             <TextBlock Text="Aspect:" Width="60" Margin="24 0 0 0" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding AspectOptions}" SelectedItem="{Binding Settings.AspectRatio}" Width="120" />
             <TextBlock Text="FPS:" Width="40" Margin="12 0 0 0" VerticalAlignment="Center" />
