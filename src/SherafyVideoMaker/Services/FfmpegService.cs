@@ -10,7 +10,7 @@ namespace SherafyVideoMaker.Services
 {
     public class FfmpegService
     {
-        public void ProcessSegment(ProjectSettings settings, Segment segment, Action<string> log)
+        public void ProcessSegment(ProjectSettings settings, Segment segment, string clipPath, Action<string> log)
         {
             if (string.IsNullOrWhiteSpace(segment.AssignedClip))
             {
@@ -18,7 +18,7 @@ namespace SherafyVideoMaker.Services
             }
 
             var ffmpegPath = Path.Combine(settings.FfmpegFolder, "ffmpeg.exe");
-            var inputClip = Path.Combine(settings.ClipsFolder, segment.AssignedClip);
+            var inputClip = clipPath;
             var outputClip = Path.Combine(settings.TempFolder, $"clip_{segment.Index}.mp4");
 
             if (!File.Exists(inputClip))

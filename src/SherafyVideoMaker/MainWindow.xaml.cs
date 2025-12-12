@@ -119,7 +119,7 @@ namespace SherafyVideoMaker
                 return;
             }
 
-            var validation = Settings.Validate();
+            var validation = Settings.Validate(Segments.Any(s => !string.IsNullOrWhiteSpace(s.ClipUrl)));
             if (!validation.IsValid)
             {
                 System.Windows.MessageBox.Show(validation.Message);
@@ -127,18 +127,23 @@ namespace SherafyVideoMaker
                 return;
             }
 
+            if (!await EnsureSegmentDownloadsAsync())
+            {
+                return;
+            }
+
             foreach (var segment in Segments)
             {
-                if (string.IsNullOrWhiteSpace(segment.AssignedClip))
+                if (string.IsNullOrWhiteSpace(segment.AssignedClip) && string.IsNullOrWhiteSpace(segment.ClipUrl))
                 {
                     System.Windows.MessageBox.Show($"Segment {segment.Index} has no clip assigned.");
                     return;
                 }
 
-                var clipPath = Path.Combine(Settings.ClipsFolder, segment.AssignedClip);
-                if (!File.Exists(clipPath))
+                var clipPath = ResolveClipPath(segment);
+                if (clipPath is null)
                 {
-                    System.Windows.MessageBox.Show($"Clip not found: {clipPath}");
+                    System.Windows.MessageBox.Show($"Clip not found for segment {segment.Index}. Assign a local file or a valid URL.");
                     return;
                 }
             }
@@ -159,7 +164,7 @@ namespace SherafyVideoMaker
                 return;
             }
 
-            var validation = Settings.Validate();
+            var validation = Settings.Validate(Segments.Any(s => !string.IsNullOrWhiteSpace(s.ClipUrl)));
             if (!validation.IsValid)
             {
                 System.Windows.MessageBox.Show(validation.Message);
@@ -174,6 +179,11 @@ namespace SherafyVideoMaker
 
             try
             {
+                if (!await EnsureSegmentDownloadsAsync())
+                {
+                    return;
+                }
+
                 Directory.CreateDirectory(Settings.TempFolder);
                 Directory.CreateDirectory(Settings.OutputFolder);
                 Directory.CreateDirectory(Settings.FfmpegFolder);
@@ -183,7 +193,13 @@ namespace SherafyVideoMaker
 
                 foreach (var segment in Segments.OrderBy(s => s.Index))
                 {
-                    _ffmpegService.ProcessSegment(Settings, segment, Log);
+                    var clipPath = ResolveClipPath(segment);
+                    if (clipPath is null)
+                    {
+                        throw new FileNotFoundException($"Missing clip for segment {segment.Index}.");
+                    }
+
+                    _ffmpegService.ProcessSegment(Settings, segment, clipPath, Log);
                 }
 
                 var outputFile = _ffmpegService.ConcatAndMux(Settings, Segments.OrderBy(s => s.Index).ToList(), Log);
@@ -284,6 +300,7 @@ namespace SherafyVideoMaker
                 var lastProgress = 0d;
                 var downloadedPath = await _downloadService.DownloadAsync(
                     Settings,
+                    Settings.ClipUrl,
                     p =>
                     {
                         if (p - lastProgress >= 5 || p >= 100)
@@ -332,6 +349,70 @@ namespace SherafyVideoMaker
                 Log("Download error: " + ex);
                 return false;
             }
+        }
+
+        private async Task<bool> EnsureSegmentDownloadsAsync()
+        {
+            var segmentsNeedingDownload = Segments
+                .Where(s => !string.IsNullOrWhiteSpace(s.ClipUrl))
+                .Where(s => string.IsNullOrWhiteSpace(s.AssignedClip) || ResolveClipPath(s) is null)
+                .OrderBy(s => s.Index)
+                .ToList();
+
+            foreach (var segment in segmentsNeedingDownload)
+            {
+                try
+                {
+                    Log($"Starting download for segment {segment.Index}: {segment.ClipUrl}");
+
+                    var lastProgress = 0d;
+                    var downloadedPath = await _downloadService.DownloadAsync(
+                        Settings,
+                        segment.ClipUrl!,
+                        p =>
+                        {
+                            if (p - lastProgress >= 5 || p >= 100)
+                            {
+                                lastProgress = p;
+                                Log($"Segment {segment.Index} download progress: {p:0.#}%");
+                            }
+                        },
+                        Log);
+
+                    segment.AssignedClip = Path.GetFileName(downloadedPath);
+                    Settings.ClipsFolder = Settings.DownloadsFolder;
+                    Log($"Assigned downloaded clip '{segment.AssignedClip}' to segment {segment.Index}.");
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show(
+                        $"Download failed for segment {segment.Index}: {ex.Message}",
+                        "Download error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    Log($"Download error for segment {segment.Index}: {ex}");
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private string? ResolveClipPath(Segment segment)
+        {
+            if (string.IsNullOrWhiteSpace(segment.AssignedClip))
+            {
+                return null;
+            }
+
+            var candidates = new[]
+            {
+                Path.IsPathRooted(segment.AssignedClip) ? segment.AssignedClip : null,
+                string.IsNullOrWhiteSpace(Settings.ClipsFolder) ? null : Path.Combine(Settings.ClipsFolder, segment.AssignedClip),
+                string.IsNullOrWhiteSpace(Settings.DownloadsFolder) ? null : Path.Combine(Settings.DownloadsFolder, segment.AssignedClip)
+            };
+
+            return candidates.FirstOrDefault(path => path is not null && File.Exists(path));
         }
     }
 }

@@ -50,6 +50,7 @@
                 <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" IsReadOnly="True" Width="90" />
                 <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*" />
                 <DataGridTextColumn Header="Assigned Clip" Binding="{Binding AssignedClip}" Width="120" />
+                <DataGridTextColumn Header="Clip URL" Binding="{Binding ClipUrl}" Width="200" />
                 <DataGridComboBoxColumn Header="Fit Mode"
                                           ItemsSource="{Binding DataContext.FitModeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
                                           SelectedItemBinding="{Binding FitMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
