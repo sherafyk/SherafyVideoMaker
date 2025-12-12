@@ -17,7 +17,7 @@ namespace SherafyVideoMaker.Models
         public string LogFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "logs");
         public string DownloadsFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "clips_downloads");
 
-        public ValidationResult Validate()
+        public ValidationResult Validate(bool hasSegmentClipUrls = false)
         {
             if (string.IsNullOrWhiteSpace(AudioPath) || !File.Exists(AudioPath))
             {
@@ -32,7 +32,8 @@ namespace SherafyVideoMaker.Models
             Directory.CreateDirectory(DownloadsFolder);
 
             if ((string.IsNullOrWhiteSpace(ClipsFolder) || !Directory.Exists(ClipsFolder))
-                && string.IsNullOrWhiteSpace(ClipUrl))
+                && string.IsNullOrWhiteSpace(ClipUrl)
+                && !hasSegmentClipUrls)
             {
                 return ValidationResult.Fail("Select a valid clips folder or provide a clip URL.");
             }
