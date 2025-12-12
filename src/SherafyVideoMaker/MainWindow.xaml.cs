@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using SherafyVideoMaker.Models;
 using SherafyVideoMaker.Services;
@@ -14,6 +15,7 @@ namespace SherafyVideoMaker
     {
         private readonly SrtParser _srtParser = new();
         private readonly FfmpegService _ffmpegService = new();
+        private readonly DownloadService _downloadService = new();
         private readonly LoggingService _logging;
 
         public ObservableCollection<Segment> Segments { get; } = new();
@@ -105,8 +107,18 @@ namespace SherafyVideoMaker
             }
         }
 
-        private void ValidateSegments(object sender, RoutedEventArgs e)
+        private async void ValidateSegments(object sender, RoutedEventArgs e)
         {
+            await ValidateSegmentsAsync();
+        }
+
+        private async Task ValidateSegmentsAsync()
+        {
+            if (!await EnsureDownloadIfNeeded())
+            {
+                return;
+            }
+
             var validation = Settings.Validate();
             if (!validation.IsValid)
             {
@@ -135,8 +147,18 @@ namespace SherafyVideoMaker
             Log("Validation passed for audio, SRT, clips, and segment assignments.");
         }
 
-        private void RenderVideo(object sender, RoutedEventArgs e)
+        private async void RenderVideo(object sender, RoutedEventArgs e)
         {
+            await RenderVideoAsync();
+        }
+
+        private async Task RenderVideoAsync()
+        {
+            if (!await EnsureDownloadIfNeeded())
+            {
+                return;
+            }
+
             var validation = Settings.Validate();
             if (!validation.IsValid)
             {
@@ -241,6 +263,75 @@ namespace SherafyVideoMaker
         private void OnPropertyChanged(string propertyName)
         {
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
+
+        private async void DownloadClip(object sender, RoutedEventArgs e)
+        {
+            await EnsureDownloadIfNeeded(showSuccessToast: true);
+        }
+
+        private async Task<bool> EnsureDownloadIfNeeded(bool showSuccessToast = false)
+        {
+            if (string.IsNullOrWhiteSpace(Settings.ClipUrl))
+            {
+                return true;
+            }
+
+            try
+            {
+                Log($"Starting download: {Settings.ClipUrl}");
+
+                var lastProgress = 0d;
+                var downloadedPath = await _downloadService.DownloadAsync(
+                    Settings,
+                    p =>
+                    {
+                        if (p - lastProgress >= 5 || p >= 100)
+                        {
+                            lastProgress = p;
+                            Log($"Download progress: {p:0.#}%");
+                        }
+                    },
+                    Log);
+
+                Settings.ClipsFolder = Settings.DownloadsFolder;
+                var fileName = Path.GetFileName(downloadedPath);
+                var targetSegment = Segments.OrderBy(s => s.Index)
+                    .FirstOrDefault(s => string.IsNullOrWhiteSpace(s.AssignedClip));
+                if (targetSegment is not null)
+                {
+                    targetSegment.AssignedClip = fileName;
+                    Log($"Assigned downloaded clip '{fileName}' to segment {targetSegment.Index}.");
+                }
+                else
+                {
+                    Log($"Downloaded clip '{fileName}' saved. No unassigned segments available.");
+                }
+
+                Settings.ClipUrl = string.Empty;
+                OnPropertyChanged(nameof(Settings));
+
+                if (showSuccessToast)
+                {
+                    System.Windows.MessageBox.Show(
+                        $"Download complete!\n{downloadedPath}",
+                        "Clip downloaded",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(
+                    "Download failed: " + ex.Message,
+                    "Download error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Error);
+                Log("Download error: " + ex);
+                return false;
+            }
         }
     }
 }
