@@ -158,6 +158,20 @@ namespace SherafyVideoMaker
             }
         }
 
+        private void BrowseBackgroundMusic(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Audio files|*.mp3;*.wav;*.m4a;*.aac|All files|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                Settings.BackgroundMusicPath = dialog.FileName;
+                OnPropertyChanged(nameof(Settings));
+            }
+        }
+
         private void LoadSrt(object sender, RoutedEventArgs e)
         {
             try

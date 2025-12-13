@@ -163,11 +163,67 @@
                                 <TextBox Width="60" Text="{Binding Settings.WatermarkPadding, UpdateSourceTrigger=PropertyChanged}" />
                             </StackPanel>
                         </Grid>
+                        <Grid Margin="0 6 0 0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Max Width" VerticalAlignment="Center" Grid.Column="0" />
+                            <TextBox Grid.Column="1" Text="{Binding Settings.WatermarkMaxWidth, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="px (optional)" VerticalAlignment="Center" Grid.Column="2" />
+                        </Grid>
                         <StackPanel Orientation="Horizontal" Margin="4 6 4 0" VerticalAlignment="Center">
                             <TextBlock Text="Opacity" VerticalAlignment="Center" Margin="0 0 8 0" />
                             <Slider Width="200" Minimum="0" Maximum="1" SmallChange="0.05" TickFrequency="0.05" IsSnapToTickEnabled="True"
                                     Value="{Binding Settings.WatermarkOpacity, UpdateSourceTrigger=PropertyChanged}" />
                             <TextBlock Text="{Binding Settings.WatermarkOpacity, StringFormat=F2}" VerticalAlignment="Center" Margin="8 0 0 0" />
+                        </StackPanel>
+                    </StackPanel>
+                    <Separator Margin="0 8" />
+                    <TextBlock Text="Background Music" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}" Margin="4 0 4 6" />
+                    <CheckBox Content="Enable background music" IsChecked="{Binding Settings.EnableBackgroundMusic}" Margin="4 0 4 6" />
+                    <StackPanel IsEnabled="{Binding Settings.EnableBackgroundMusic}">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Audio" VerticalAlignment="Center" Grid.Column="0" />
+                            <TextBox Grid.Column="1" Text="{Binding Settings.BackgroundMusicPath, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Grid.Column="2" Content="Browse" Click="BrowseBackgroundMusic" />
+                        </Grid>
+                        <Grid Margin="0 6 0 0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Start / End" VerticalAlignment="Center" Grid.Column="0" />
+                            <StackPanel Orientation="Horizontal" Grid.Column="1" Spacing="6">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="Start" Margin="0 0 4 0" VerticalAlignment="Center" />
+                                    <TextBox Width="80" Text="{Binding Settings.BackgroundMusicStart, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                    <TextBlock Text="End" Margin="0 0 4 0" VerticalAlignment="Center" />
+                                    <TextBox Width="80" Text="{Binding Settings.BackgroundMusicEnd, UpdateSourceTrigger=PropertyChanged}" />
+                                </StackPanel>
+                            </StackPanel>
+                            <CheckBox Grid.Column="2" Content="Loop to fill video" IsChecked="{Binding Settings.BackgroundMusicLoop}" VerticalAlignment="Center" />
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="4 6 4 0" VerticalAlignment="Center">
+                            <TextBlock Text="Volume" VerticalAlignment="Center" Margin="0 0 8 0" />
+                            <Slider Width="200" Minimum="0" Maximum="2" SmallChange="0.05" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                    Value="{Binding Settings.BackgroundMusicVolume, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="{Binding Settings.BackgroundMusicVolume, StringFormat=F2}" VerticalAlignment="Center" Margin="8 0 0 0" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="4 6 4 0" VerticalAlignment="Center">
+                            <TextBlock Text="Speed" VerticalAlignment="Center" Margin="0 0 8 0" />
+                            <Slider Width="200" Minimum="0.5" Maximum="2" SmallChange="0.05" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                    Value="{Binding Settings.BackgroundMusicSpeed, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="{Binding Settings.BackgroundMusicSpeed, StringFormat=F2}x" VerticalAlignment="Center" Margin="8 0 0 0" />
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>

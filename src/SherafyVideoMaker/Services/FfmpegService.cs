@@ -1,5 +1,4 @@
 using System;
-using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -160,6 +159,8 @@ namespace SherafyVideoMaker.Services
         {
             var ffmpegPath = Path.Combine(settings.FfmpegFolder, "ffmpeg.exe");
             var concatPath = Path.Combine(settings.TempFolder, "concat_list.txt");
+            var totalDurationSeconds = segments.Sum(s => s.Duration.TotalSeconds);
+            var durationText = totalDurationSeconds.ToString("0.###", CultureInfo.InvariantCulture);
 
             // Ensure all expected segment clips exist before trying concat
             using (var sw = new StreamWriter(concatPath, false))
@@ -182,8 +183,7 @@ namespace SherafyVideoMaker.Services
 
             var outputFile = Path.Combine(settings.OutputFolder, "final_output.mp4");
             var videoEncoder = GetVideoEncoder(settings, log);
-            var concatArgs =
-                $"-y -f concat -safe 0 -i \"{concatPath}\" -i \"{settings.AudioPath}\" -map 0:v -map 1:a -c:v {videoEncoder} -c:a aac -shortest \"{outputFile}\"";
+            var concatArgs = BuildConcatArgs(settings, concatPath, videoEncoder, durationText, outputFile, log);
 
             log("Running final concat + audio...");
             log($"FFmpeg args (final): {concatArgs}");
@@ -202,6 +202,89 @@ namespace SherafyVideoMaker.Services
             }
 
             return outputFile;
+        }
+
+        private string BuildConcatArgs(
+            ProjectSettings settings,
+            string concatPath,
+            string videoEncoder,
+            string durationText,
+            string outputFile,
+            Action<string> log)
+        {
+            var baseInputs = $"-y -f concat -safe 0 -i \"{concatPath}\" -i \"{settings.AudioPath}\"";
+
+            if (!settings.EnableBackgroundMusic)
+            {
+                return
+                    $"{baseInputs} -map 0:v -map 1:a -c:v {videoEncoder} -c:a aac -t {durationText} -shortest \"{outputFile}\"";
+            }
+
+            var backgroundInputs = BuildBackgroundMusicInputArgs(settings, log);
+            var filterComplex = BuildBackgroundMusicFilters(settings, durationText, log);
+
+            return
+                $"{baseInputs} {backgroundInputs} -filter_complex \"{filterComplex}\" -map 0:v -map \"[mixa]\" -c:v {videoEncoder} -c:a aac -t {durationText} -shortest \"{outputFile}\"";
+        }
+
+        private static string BuildBackgroundMusicInputArgs(ProjectSettings settings, Action<string> log)
+        {
+            var args = new List<string>();
+
+            if (settings.BackgroundMusicLoop)
+            {
+                args.Add("-stream_loop -1");
+                log("Background music will loop to fill the timeline.");
+            }
+
+            if (settings.BackgroundMusicStart > 0)
+            {
+                var startText = settings.BackgroundMusicStart.ToString("0.###", CultureInfo.InvariantCulture);
+                args.Add($"-ss {startText}");
+                log($"Background music will start at {startText}s of the source track.");
+            }
+
+            if (settings.BackgroundMusicEnd > 0)
+            {
+                var endText = settings.BackgroundMusicEnd.ToString("0.###", CultureInfo.InvariantCulture);
+                args.Add($"-to {endText}");
+                log($"Background music will stop reading at {endText}s of the source track.");
+            }
+
+            args.Add($"-i \"{settings.BackgroundMusicPath}\"");
+
+            return string.Join(' ', args);
+        }
+
+        private static string BuildBackgroundMusicFilters(
+            ProjectSettings settings,
+            string durationText,
+            Action<string> log)
+        {
+            var filters = new List<string>();
+            var currentLabel = "2:a";
+
+            if (Math.Abs(settings.BackgroundMusicSpeed - 1.0) > 0.0001)
+            {
+                var speedText = settings.BackgroundMusicSpeed.ToString("0.###", CultureInfo.InvariantCulture);
+                filters.Add($"[{currentLabel}]atempo={speedText}[bgspeed]");
+                currentLabel = "bgspeed";
+                log($"Background music speed set to {speedText}x.");
+            }
+
+            if (Math.Abs(settings.BackgroundMusicVolume - 1.0) > 0.0001)
+            {
+                var volumeText = settings.BackgroundMusicVolume.ToString("0.###", CultureInfo.InvariantCulture);
+                filters.Add($"[{currentLabel}]volume={volumeText}[bgvol]");
+                currentLabel = "bgvol";
+                log($"Background music volume set to {volumeText}.");
+            }
+
+            filters.Add($"[{currentLabel}]apad=pad_dur={durationText}[bgpad]");
+
+            filters.Add("[1:a][bgpad]amix=inputs=2:duration=longest:dropout_transition=2[mixa]");
+
+            return string.Join(';', filters);
         }
 
         private static string BuildFfmpegArgs(
@@ -233,9 +316,13 @@ namespace SherafyVideoMaker.Services
             var padding = Math.Max(0, settings.WatermarkPadding);
             var (x, y) = GetOverlayPosition(settings.WatermarkPosition, padding);
             var opacityText = opacity.ToString("0.###", CultureInfo.InvariantCulture);
+            var maxWidth = settings.WatermarkMaxWidth;
+            var scaleFilter = maxWidth is null
+                ? string.Empty
+                : $",scale='min(iw\\,{maxWidth})':-1";
 
             var filterComplex =
-                $"[0:v]{filters}[base];[1]format=rgba,colorchannelmixer=aa={opacityText}[wm];[base][wm]overlay={x}:{y}[outv]";
+                $"[0:v]{filters}[base];[1]format=rgba{scaleFilter},colorchannelmixer=aa={opacityText}[wm];[base][wm]overlay={x}:{y}[outv]";
 
             return $"-filter_complex \"{filterComplex}\" -map \"[outv]\"";
         }
