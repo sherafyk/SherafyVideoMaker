@@ -22,6 +22,15 @@ namespace SherafyVideoMaker.Models
         public double WatermarkOpacity { get; set; } = 0.75;
         public int WatermarkPadding { get; set; } = 24;
         public WatermarkPosition WatermarkPosition { get; set; } = WatermarkPosition.BottomRight;
+        public int? WatermarkMaxWidth { get; set; }
+
+        public bool EnableBackgroundMusic { get; set; }
+        public string BackgroundMusicPath { get; set; } = string.Empty;
+        public bool BackgroundMusicLoop { get; set; } = true;
+        public double BackgroundMusicVolume { get; set; } = 0.35;
+        public double BackgroundMusicStart { get; set; }
+        public double BackgroundMusicEnd { get; set; }
+        public double BackgroundMusicSpeed { get; set; } = 1.0;
 
         public ValidationResult Validate(bool hasSegmentClipUrls = false)
         {
@@ -64,6 +73,39 @@ namespace SherafyVideoMaker.Models
                 if (WatermarkPadding < 0)
                 {
                     return ValidationResult.Fail("Watermark padding must be zero or positive.");
+                }
+
+                if (WatermarkMaxWidth is not null && WatermarkMaxWidth <= 0)
+                {
+                    return ValidationResult.Fail("Watermark max width must be positive when set.");
+                }
+            }
+
+            if (EnableBackgroundMusic)
+            {
+                if (string.IsNullOrWhiteSpace(BackgroundMusicPath) || !File.Exists(BackgroundMusicPath))
+                {
+                    return ValidationResult.Fail("Select a valid background music file when the feature is enabled.");
+                }
+
+                if (BackgroundMusicStart < 0 || BackgroundMusicEnd < 0)
+                {
+                    return ValidationResult.Fail("Background music start/end times must be zero or positive.");
+                }
+
+                if (BackgroundMusicEnd > 0 && BackgroundMusicEnd <= BackgroundMusicStart)
+                {
+                    return ValidationResult.Fail("Background music end time must be greater than start time.");
+                }
+
+                if (BackgroundMusicVolume < 0 || BackgroundMusicVolume > 2)
+                {
+                    return ValidationResult.Fail("Background music volume must be between 0 and 2.");
+                }
+
+                if (BackgroundMusicSpeed < 0.5 || BackgroundMusicSpeed > 2)
+                {
+                    return ValidationResult.Fail("Background music speed must be at least 0.5x and up to 2x.");
                 }
             }
 
