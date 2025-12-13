@@ -10,6 +10,9 @@ namespace SherafyVideoMaker.Services
 {
     public class FfmpegService
     {
+        private string? _selectedVideoEncoder;
+        private bool? _lastUseGpuSetting;
+
         public void ProcessSegment(ProjectSettings settings, Segment segment, string clipPath, Action<string> log)
         {
             if (string.IsNullOrWhiteSpace(segment.AssignedClip))
@@ -42,6 +45,7 @@ namespace SherafyVideoMaker.Services
             }
 
             var (targetWidth, targetHeight) = GetTargetSize(settings.AspectRatio);
+            var videoEncoder = GetVideoEncoder(settings, log);
 
             // IMPORTANT FIX: use "increase" instead of invalid "cover"
             // This scales up to fill the frame, then crops.
@@ -57,7 +61,7 @@ namespace SherafyVideoMaker.Services
                     // Just cut to the slot duration, keep original playback speed
                     segment.Speed = 1.0;
                     args =
-                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
                     break;
 
                 case FitMode.Slow:
@@ -83,7 +87,7 @@ namespace SherafyVideoMaker.Services
                     }
 
                     args =
-                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
                     break;
 
                 case FitMode.Speed:
@@ -109,7 +113,7 @@ namespace SherafyVideoMaker.Services
                     }
 
                     args =
-                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
                     break;
 
                 case FitMode.Loop:
@@ -122,7 +126,7 @@ namespace SherafyVideoMaker.Services
                         $"Loop mode: segment {segment.Index}, original {clipDuration:0.###}s, frames={loopFrames}, slot={slot:0.###}s.");
 
                     args =
-                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} \"{outputClip}\"";
+                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
                     break;
 
                 default:
@@ -171,8 +175,9 @@ namespace SherafyVideoMaker.Services
             }
 
             var outputFile = Path.Combine(settings.OutputFolder, "final_output.mp4");
+            var videoEncoder = GetVideoEncoder(settings, log);
             var concatArgs =
-                $"-y -f concat -safe 0 -i \"{concatPath}\" -i \"{settings.AudioPath}\" -map 0:v -map 1:a -c:v libx264 -c:a aac -shortest \"{outputFile}\"";
+                $"-y -f concat -safe 0 -i \"{concatPath}\" -i \"{settings.AudioPath}\" -map 0:v -map 1:a -c:v {videoEncoder} -c:a aac -shortest \"{outputFile}\"";
 
             log("Running final concat + audio...");
             log($"FFmpeg args (final): {concatArgs}");
@@ -250,6 +255,79 @@ namespace SherafyVideoMaker.Services
             process.WaitForExit();
 
             return process.ExitCode;
+        }
+
+        private string GetVideoEncoder(ProjectSettings settings, Action<string> log)
+        {
+            if (!string.IsNullOrWhiteSpace(_selectedVideoEncoder) && _lastUseGpuSetting == settings.UseGpuWhenAvailable)
+            {
+                return _selectedVideoEncoder!;
+            }
+
+            _selectedVideoEncoder = null;
+            _lastUseGpuSetting = settings.UseGpuWhenAvailable;
+            var ffmpegPath = Path.Combine(settings.FfmpegFolder, "ffmpeg.exe");
+            const string fallbackEncoder = "libx264";
+
+            if (settings.UseGpuWhenAvailable)
+            {
+                if (EncoderAvailable(ffmpegPath, "h264_nvenc", log))
+                {
+                    _selectedVideoEncoder = "h264_nvenc";
+                    log("Using GPU encoder: h264_nvenc.");
+                    return _selectedVideoEncoder;
+                }
+
+                log("GPU encoder h264_nvenc not available; falling back to libx264.");
+            }
+            else
+            {
+                log("GPU acceleration disabled; using libx264.");
+            }
+
+            _selectedVideoEncoder = fallbackEncoder;
+            return _selectedVideoEncoder;
+        }
+
+        private static bool EncoderAvailable(string ffmpegPath, string encoderName, Action<string> log)
+        {
+            if (!File.Exists(ffmpegPath))
+            {
+                throw new FileNotFoundException("ffmpeg.exe not found. Place it in the ffmpeg folder.", ffmpegPath);
+            }
+
+            var startInfo = new ProcessStartInfo
+            {
+                FileName = ffmpegPath,
+                Arguments = "-hide_banner -loglevel error -encoders",
+                RedirectStandardOutput = true,
+                RedirectStandardError = true,
+                UseShellExecute = false,
+                CreateNoWindow = true
+            };
+
+            using var process = new Process { StartInfo = startInfo };
+
+            if (!process.Start())
+            {
+                log("Failed to start ffmpeg while probing encoders; defaulting to CPU encoder.");
+                return false;
+            }
+
+            var output = process.StandardOutput.ReadToEnd();
+            var error = process.StandardError.ReadToEnd();
+            process.WaitForExit();
+
+            if (process.ExitCode != 0)
+            {
+                log(string.IsNullOrWhiteSpace(error)
+                    ? "ffmpeg returned a non-zero exit code while probing encoders; defaulting to CPU encoder."
+                    : $"ffmpeg error while probing encoders: {error.Trim()} - defaulting to CPU encoder.");
+                return false;
+            }
+
+            var isAvailable = output.Contains(encoderName, StringComparison.OrdinalIgnoreCase);
+            return isAvailable;
         }
 
         private static double GetClipDuration(ProjectSettings settings, string clipPath, Action<string> log)
