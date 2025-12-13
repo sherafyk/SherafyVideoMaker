@@ -30,6 +30,7 @@ namespace SherafyVideoMaker
         public ObservableCollection<string> AspectOptions { get; } = new(new[] { "16:9", "9:16", "1:1" });
         public ObservableCollection<int> FpsOptions { get; } = new(new[] { 24, 25, 30, 60 });
         public Array FitModeOptions { get; } = Enum.GetValues(typeof(FitMode));
+        public Array WatermarkPositionOptions { get; } = Enum.GetValues(typeof(WatermarkPosition));
 
         private const double DurationToleranceSeconds = 2.5;
 
@@ -139,6 +140,20 @@ namespace SherafyVideoMaker
             if (dialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 Settings.ClipsFolder = dialog.SelectedPath;
+                OnPropertyChanged(nameof(Settings));
+            }
+        }
+
+        private void BrowseWatermark(object sender, RoutedEventArgs e)
+        {
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Filter = "Image files|*.png;*.jpg;*.jpeg;*.bmp;*.gif|All files|*.*"
+            };
+
+            if (dialog.ShowDialog() == true)
+            {
+                Settings.WatermarkPath = dialog.FileName;
                 OnPropertyChanged(nameof(Settings));
             }
         }

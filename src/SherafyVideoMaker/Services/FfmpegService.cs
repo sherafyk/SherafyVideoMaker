@@ -1,4 +1,5 @@
 using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
@@ -23,11 +24,18 @@ namespace SherafyVideoMaker.Services
             var ffmpegPath = Path.Combine(settings.FfmpegFolder, "ffmpeg.exe");
             var inputClip = clipPath;
             var outputClip = Path.Combine(settings.TempFolder, $"clip_{segment.Index}.mp4");
+            var useWatermark = settings.EnableWatermark && !string.IsNullOrWhiteSpace(settings.WatermarkPath);
 
             if (!File.Exists(inputClip))
             {
                 log($"Expected input clip missing for segment {segment.Index}: {inputClip}");
                 throw new FileNotFoundException($"Input clip for segment {segment.Index} not found.", inputClip);
+            }
+
+            if (useWatermark && !File.Exists(settings.WatermarkPath))
+            {
+                log("Watermark enabled but file not found.");
+                throw new FileNotFoundException("Watermark file not found.", settings.WatermarkPath);
             }
 
             var slot = segment.Duration.TotalSeconds;
@@ -54,14 +62,14 @@ namespace SherafyVideoMaker.Services
 
             var slotText = slot.ToString("0.###", CultureInfo.InvariantCulture);
             string args;
+            string? filterArgs = null;
 
             switch (mode)
             {
                 case FitMode.Trim:
                     // Just cut to the slot duration, keep original playback speed
                     segment.Speed = 1.0;
-                    args =
-                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
+                    filterArgs = filters;
                     break;
 
                 case FitMode.Slow:
@@ -86,8 +94,7 @@ namespace SherafyVideoMaker.Services
                             $"Slow mode selected but clip for segment {segment.Index} already meets or exceeds slot length; leaving speed unchanged.");
                     }
 
-                    args =
-                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
+                    filterArgs = filters;
                     break;
 
                 case FitMode.Speed:
@@ -112,8 +119,7 @@ namespace SherafyVideoMaker.Services
                             $"Speed mode selected but clip for segment {segment.Index} already fits within slot; leaving speed unchanged.");
                     }
 
-                    args =
-                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
+                    filterArgs = filters;
                     break;
 
                 case FitMode.Loop:
@@ -125,14 +131,14 @@ namespace SherafyVideoMaker.Services
                     log(
                         $"Loop mode: segment {segment.Index}, original {clipDuration:0.###}s, frames={loopFrames}, slot={slot:0.###}s.");
 
-                    args =
-                        $"-y -i \"{inputClip}\" -t {slotText} -an -vf \"{filters}\" -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
+                    filterArgs = filters;
                     break;
 
                 default:
                     throw new InvalidOperationException($"Unknown fit mode: {mode}");
             }
 
+            args = BuildFfmpegArgs(inputClip, settings, slotText, videoEncoder, filterArgs!, outputClip, useWatermark);
             log($"FFmpeg args (segment {segment.Index}): {args}");
 
             var exitCode = RunProcess(ffmpegPath, args, log);
@@ -196,6 +202,53 @@ namespace SherafyVideoMaker.Services
             }
 
             return outputFile;
+        }
+
+        private static string BuildFfmpegArgs(
+            string inputClip,
+            ProjectSettings settings,
+            string slotText,
+            string videoEncoder,
+            string filters,
+            string outputClip,
+            bool useWatermark)
+        {
+            var inputArgs = $"-y -i \"{inputClip}\" ";
+            if (useWatermark)
+            {
+                inputArgs += $"-i \"{settings.WatermarkPath}\" ";
+            }
+
+            var filterArgs = useWatermark
+                ? BuildWatermarkFilter(filters, settings)
+                : $"-vf \"{filters}\"";
+
+            return
+                $"{inputArgs}-t {slotText} -an {filterArgs} -r {settings.Fps} -c:v {videoEncoder} \"{outputClip}\"";
+        }
+
+        private static string BuildWatermarkFilter(string filters, ProjectSettings settings)
+        {
+            var opacity = Math.Clamp(settings.WatermarkOpacity, 0, 1);
+            var padding = Math.Max(0, settings.WatermarkPadding);
+            var (x, y) = GetOverlayPosition(settings.WatermarkPosition, padding);
+            var opacityText = opacity.ToString("0.###", CultureInfo.InvariantCulture);
+
+            var filterComplex =
+                $"[0:v]{filters}[base];[1]format=rgba,colorchannelmixer=aa={opacityText}[wm];[base][wm]overlay={x}:{y}[outv]";
+
+            return $"-filter_complex \"{filterComplex}\" -map \"[outv]\"";
+        }
+
+        private static (string x, string y) GetOverlayPosition(WatermarkPosition position, int padding)
+        {
+            return position switch
+            {
+                WatermarkPosition.TopLeft => ($"{padding}", $"{padding}"),
+                WatermarkPosition.TopRight => ($"main_w-overlay_w-{padding}", $"{padding}"),
+                WatermarkPosition.BottomLeft => ($"{padding}", $"main_h-overlay_h-{padding}"),
+                _ => ($"main_w-overlay_w-{padding}", $"main_h-overlay_h-{padding}")
+            };
         }
 
         private static (int width, int height) GetTargetSize(string aspect)

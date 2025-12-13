@@ -17,6 +17,11 @@ namespace SherafyVideoMaker.Models
         public string LogFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "logs");
         public string DownloadsFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "clips_downloads");
         public bool UseGpuWhenAvailable { get; set; } = true;
+        public bool EnableWatermark { get; set; }
+        public string WatermarkPath { get; set; } = string.Empty;
+        public double WatermarkOpacity { get; set; } = 0.75;
+        public int WatermarkPadding { get; set; } = 24;
+        public WatermarkPosition WatermarkPosition { get; set; } = WatermarkPosition.BottomRight;
 
         public ValidationResult Validate(bool hasSegmentClipUrls = false)
         {
@@ -44,8 +49,34 @@ namespace SherafyVideoMaker.Models
                 return ValidationResult.Fail("FPS must be greater than zero.");
             }
 
+            if (EnableWatermark)
+            {
+                if (string.IsNullOrWhiteSpace(WatermarkPath) || !File.Exists(WatermarkPath))
+                {
+                    return ValidationResult.Fail("Select a valid watermark image when watermarking is enabled.");
+                }
+
+                if (WatermarkOpacity < 0 || WatermarkOpacity > 1)
+                {
+                    return ValidationResult.Fail("Watermark opacity must be between 0 and 1.");
+                }
+
+                if (WatermarkPadding < 0)
+                {
+                    return ValidationResult.Fail("Watermark padding must be zero or positive.");
+                }
+            }
+
             return ValidationResult.Success();
         }
+    }
+
+    public enum WatermarkPosition
+    {
+        TopLeft,
+        TopRight,
+        BottomLeft,
+        BottomRight
     }
 
     public record ValidationResult(bool IsValid, string Message)
