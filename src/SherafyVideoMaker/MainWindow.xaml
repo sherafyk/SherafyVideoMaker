@@ -136,6 +136,40 @@
                         </StackPanel>
                     </Grid>
                     <CheckBox Content="Use GPU when available" IsChecked="{Binding Settings.UseGpuWhenAvailable}" Margin="4 8 4 0" />
+                    <Separator Margin="0 6" />
+                    <TextBlock Text="Watermark" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}" Margin="4 0 4 6" />
+                    <CheckBox Content="Enable watermark" IsChecked="{Binding Settings.EnableWatermark}" Margin="4 0 4 6" />
+                    <StackPanel IsEnabled="{Binding Settings.EnableWatermark}" Margin="0 0 0 4">
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Watermark" VerticalAlignment="Center" Grid.Column="0" />
+                            <TextBox Grid.Column="1" Text="{Binding Settings.WatermarkPath, UpdateSourceTrigger=PropertyChanged}" />
+                            <Button Grid.Column="2" Content="Browse" Click="BrowseWatermark" />
+                        </Grid>
+                        <Grid Margin="0 6 0 0">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="100" SharedSizeGroup="Label" />
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock Text="Position" VerticalAlignment="Center" Grid.Column="0" />
+                            <ComboBox Grid.Column="1" ItemsSource="{Binding WatermarkPositionOptions}" SelectedItem="{Binding Settings.WatermarkPosition}" />
+                            <StackPanel Orientation="Horizontal" Grid.Column="2" VerticalAlignment="Center">
+                                <TextBlock Text="Padding" VerticalAlignment="Center" Margin="0 0 6 0" />
+                                <TextBox Width="60" Text="{Binding Settings.WatermarkPadding, UpdateSourceTrigger=PropertyChanged}" />
+                            </StackPanel>
+                        </Grid>
+                        <StackPanel Orientation="Horizontal" Margin="4 6 4 0" VerticalAlignment="Center">
+                            <TextBlock Text="Opacity" VerticalAlignment="Center" Margin="0 0 8 0" />
+                            <Slider Width="200" Minimum="0" Maximum="1" SmallChange="0.05" TickFrequency="0.05" IsSnapToTickEnabled="True"
+                                    Value="{Binding Settings.WatermarkOpacity, UpdateSourceTrigger=PropertyChanged}" />
+                            <TextBlock Text="{Binding Settings.WatermarkOpacity, StringFormat=F2}" VerticalAlignment="Center" Margin="8 0 0 0" />
+                        </StackPanel>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
