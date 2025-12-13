@@ -50,7 +50,7 @@ namespace SherafyVideoMaker
             _logging = new LoggingService(Settings);
         }
 
-        private void SegmentsGrid_PreviewDragOver(object sender, DragEventArgs e)
+        private void SegmentsGrid_PreviewDragOver(object sender, System.Windows.DragEventArgs e)
         {
             if (e.Data.GetDataPresent(DataFormats.FileDrop))
             {
@@ -59,7 +59,7 @@ namespace SherafyVideoMaker
             }
         }
 
-        private void SegmentsGrid_Drop(object sender, DragEventArgs e)
+        private void SegmentsGrid_Drop(object sender, System.Windows.DragEventArgs e)
         {
             if (!e.Data.GetDataPresent(DataFormats.FileDrop))
             {
