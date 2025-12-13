@@ -16,6 +16,7 @@ namespace SherafyVideoMaker.Models
         public string FfmpegFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "ffmpeg");
         public string LogFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "logs");
         public string DownloadsFolder { get; set; } = Path.Combine(Environment.CurrentDirectory, "clips_downloads");
+        public bool UseGpuWhenAvailable { get; set; } = true;
 
         public ValidationResult Validate(bool hasSegmentClipUrls = false)
         {

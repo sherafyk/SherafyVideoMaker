@@ -37,6 +37,7 @@
             <ComboBox ItemsSource="{Binding AspectOptions}" SelectedItem="{Binding Settings.AspectRatio}" Width="120" />
             <TextBlock Text="FPS:" Width="40" Margin="12 0 0 0" VerticalAlignment="Center" />
             <ComboBox ItemsSource="{Binding FpsOptions}" SelectedItem="{Binding Settings.Fps}" Width="80" />
+            <CheckBox Content="Use GPU when available" IsChecked="{Binding Settings.UseGpuWhenAvailable}" Margin="12 0 0 0" VerticalAlignment="Center" />
             <Button Content="Load SRT" Width="100" Margin="20 0 0 0" Click="LoadSrt" />
             <Button Content="Validate" Width="100" Margin="12 0 0 0" Click="ValidateSegments" />
             <Button Content="Render" Width="100" Margin="12 0 0 0" Click="RenderVideo" />
