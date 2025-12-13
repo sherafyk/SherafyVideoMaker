@@ -111,7 +111,7 @@
                 </StackPanel>
 
                 <StackPanel Grid.Column="1">
-                    <TextBlock Text="Downloads & Preferences" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}" Margin="4 0 4 6" />
+                    <TextBlock Text="Downloads &amp; Preferences" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}" Margin="4 0 4 6" />
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="100" SharedSizeGroup="Label" />
