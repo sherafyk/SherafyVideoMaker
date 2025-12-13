@@ -11,6 +11,9 @@ using System.Windows.Media;
 using SherafyVideoMaker.Models;
 using SherafyVideoMaker.Services;
 
+using DataFormats = System.Windows.DataFormats;
+using DragDropEffects = System.Windows.DragDropEffects;
+
 namespace SherafyVideoMaker
 {
     public partial class MainWindow : Window, INotifyPropertyChanged
