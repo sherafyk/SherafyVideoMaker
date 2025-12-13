@@ -58,7 +58,7 @@ Ensure-Directory (Split-Path -Path $portableRoot -Parent)
 
 Push-Location $repoRoot
 try {
-    dotnet publish "SherafyVideoMaker.sln" `
+    dotnet publish "src/SherafyVideoMaker/SherafyVideoMaker.csproj" `
         -c $Configuration `
         -r $Runtime `
         --self-contained true `
