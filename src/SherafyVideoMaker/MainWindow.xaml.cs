@@ -6,6 +6,8 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
+using System.Windows.Controls;
+using System.Windows.Media;
 using SherafyVideoMaker.Models;
 using SherafyVideoMaker.Services;
 
@@ -46,6 +48,57 @@ namespace SherafyVideoMaker
             Settings.AspectRatio = AspectOptions.First();
             Settings.Fps = FpsOptions.First(x => x == 30);
             _logging = new LoggingService(Settings);
+        }
+
+        private void SegmentsGrid_PreviewDragOver(object sender, DragEventArgs e)
+        {
+            if (e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                e.Effects = DragDropEffects.Copy;
+                e.Handled = true;
+            }
+        }
+
+        private void SegmentsGrid_Drop(object sender, DragEventArgs e)
+        {
+            if (!e.Data.GetDataPresent(DataFormats.FileDrop))
+            {
+                return;
+            }
+
+            var files = e.Data.GetData(DataFormats.FileDrop) as string[];
+            if (files is null || files.Length == 0)
+            {
+                return;
+            }
+
+            var dataGrid = (DataGrid)sender;
+            var position = e.GetPosition(dataGrid);
+            var hitElement = dataGrid.InputHitTest(position) as DependencyObject;
+            var row = FindParent<DataGridRow>(hitElement);
+
+            if (row?.Item is Segment segment)
+            {
+                var fileName = Path.GetFileName(files[0]);
+                segment.AssignedClip = fileName;
+                dataGrid.Items.Refresh();
+                Log($"Assigned clip '{fileName}' to segment {segment.Index} via drag & drop.");
+            }
+        }
+
+        private static T? FindParent<T>(DependencyObject? child) where T : DependencyObject
+        {
+            while (child is not null)
+            {
+                if (child is T parent)
+                {
+                    return parent;
+                }
+
+                child = VisualTreeHelper.GetParent(child);
+            }
+
+            return null;
         }
 
         private void BrowseAudio(object sender, RoutedEventArgs e)

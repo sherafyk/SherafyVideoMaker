@@ -4,62 +4,184 @@
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         mc:Ignorable="d"
-        Title="Sherafy Video Maker" Height="720" Width="1080" MinHeight="640" MinWidth="980">
-    <Grid Margin="12">
+        Title="Sherafy Video Maker" Height="720" Width="1080" MinHeight="640" MinWidth="980" Background="#F5F7FF">
+    <Window.Resources>
+        <SolidColorBrush x:Key="PrimaryBrush" Color="#0009AE" />
+        <SolidColorBrush x:Key="SecondaryBrush" Color="#1A008E" />
+        <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#1A008E" Offset="0" />
+            <GradientStop Color="#0009AE" Offset="1" />
+        </LinearGradientBrush>
+        <SolidColorBrush x:Key="CardBackground" Color="#FFFFFF" />
+        <Style TargetType="Button">
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Padding" Value="10 8" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Foreground" Value="White" />
+            <Setter Property="Background" Value="{StaticResource AccentGradient}" />
+            <Setter Property="BorderBrush" Value="Transparent" />
+            <Setter Property="BorderThickness" Value="0" />
+            <Setter Property="Cursor" Value="Hand" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="TextBox">
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="BorderBrush" Value="#CCD3FF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="#FBFCFF" />
+        </Style>
+        <Style TargetType="ComboBox">
+            <Setter Property="Margin" Value="4" />
+            <Setter Property="Padding" Value="6" />
+            <Setter Property="BorderBrush" Value="#CCD3FF" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="Background" Value="#FBFCFF" />
+        </Style>
+    </Window.Resources>
+    <Grid Margin="16" IsSharedSizeScope="True">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
             <RowDefinition Height="Auto" />
         </Grid.RowDefinitions>
-        <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="*" />
-            <ColumnDefinition Width="*" />
-        </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0 0 0 12" VerticalAlignment="Top">
-            <TextBlock Text="Audio:" Width="60" VerticalAlignment="Center" />
-            <TextBox Text="{Binding Settings.AudioPath, UpdateSourceTrigger=PropertyChanged}" Width="380" Margin="4 0" />
-            <Button Content="Browse" Width="80" Margin="6 0" Click="BrowseAudio" />
-            <TextBlock Text="SRT:" Width="60" Margin="24 0 0 0" VerticalAlignment="Center" />
-            <TextBox Text="{Binding Settings.SrtPath, UpdateSourceTrigger=PropertyChanged}" Width="380" Margin="4 0" />
-            <Button Content="Browse" Width="80" Margin="6 0" Click="BrowseSrt" />
-        </StackPanel>
+        <Border Background="{StaticResource AccentGradient}" CornerRadius="10" Padding="16" Margin="0 0 0 12">
+            <DockPanel>
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                    <Button Content="Load SRT" Width="110" Click="LoadSrt" />
+                    <Button Content="Validate" Width="110" Click="ValidateSegments" />
+                    <Button Content="Render" Width="110" Click="RenderVideo" />
+                </StackPanel>
+                <StackPanel Orientation="Vertical">
+                    <TextBlock Text="Sherafy Video Maker" FontSize="20" FontWeight="Bold" Foreground="White" />
+                    <TextBlock Text="Clean, modern workflow for pairing narration with clips" Foreground="#E8ECFF" />
+                </StackPanel>
+            </DockPanel>
+        </Border>
 
-        <StackPanel Grid.Row="1" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0 0 0 12" VerticalAlignment="Top">
-            <TextBlock Text="Clips Folder:" Width="100" VerticalAlignment="Center" />
-            <TextBox Text="{Binding Settings.ClipsFolder, UpdateSourceTrigger=PropertyChanged}" Width="380" Margin="4 0" />
-            <Button Content="Browse" Width="80" Margin="6 0" Click="BrowseClipsFolder" />
-            <TextBlock Text="Clip URL:" Width="80" Margin="18 0 0 0" VerticalAlignment="Center" />
-            <TextBox Text="{Binding Settings.ClipUrl, UpdateSourceTrigger=PropertyChanged}" Width="300" Margin="4 0" />
-            <Button Content="Download" Width="100" Margin="6 0" Click="DownloadClip" />
-            <TextBlock Text="Aspect:" Width="60" Margin="24 0 0 0" VerticalAlignment="Center" />
-            <ComboBox ItemsSource="{Binding AspectOptions}" SelectedItem="{Binding Settings.AspectRatio}" Width="120" />
-            <TextBlock Text="FPS:" Width="40" Margin="12 0 0 0" VerticalAlignment="Center" />
-            <ComboBox ItemsSource="{Binding FpsOptions}" SelectedItem="{Binding Settings.Fps}" Width="80" />
-            <CheckBox Content="Use GPU when available" IsChecked="{Binding Settings.UseGpuWhenAvailable}" Margin="12 0 0 0" VerticalAlignment="Center" />
-            <Button Content="Load SRT" Width="100" Margin="20 0 0 0" Click="LoadSrt" />
-            <Button Content="Validate" Width="100" Margin="12 0 0 0" Click="ValidateSegments" />
-            <Button Content="Render" Width="100" Margin="12 0 0 0" Click="RenderVideo" />
-        </StackPanel>
+        <Border Grid.Row="1" Background="{StaticResource CardBackground}" CornerRadius="12" Padding="14" Margin="0 0 0 12" BorderBrush="#E1E6FF" BorderThickness="1">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
 
-        <DataGrid Grid.Row="2" Grid.ColumnSpan="2" ItemsSource="{Binding Segments}" AutoGenerateColumns="False" Margin="0 0 0 12" CanUserAddRows="False">
-            <DataGrid.Columns>
-                <DataGridTextColumn Header="#" Binding="{Binding Index}" IsReadOnly="True" Width="40" />
-                <DataGridTextColumn Header="Start" Binding="{Binding Start}" Width="120" />
-                <DataGridTextColumn Header="End" Binding="{Binding End}" Width="120" />
-                <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" IsReadOnly="True" Width="90" />
-                <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*" />
-                <DataGridTextColumn Header="Assigned Clip" Binding="{Binding AssignedClip}" Width="120" />
-                <DataGridTextColumn Header="Clip URL" Binding="{Binding ClipUrl}" Width="200" />
-                <DataGridComboBoxColumn Header="Fit Mode"
-                                          ItemsSource="{Binding DataContext.FitModeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
-                                          SelectedItemBinding="{Binding FitMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                                          Width="120" />
-                <DataGridTextColumn Header="Speed" Binding="{Binding Speed}" Width="80" />
-            </DataGrid.Columns>
-        </DataGrid>
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="Input Files" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}" Margin="4 0 4 6" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120" SharedSizeGroup="Label" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Audio" VerticalAlignment="Center" Grid.Column="0" />
+                        <TextBox Grid.Column="1" Text="{Binding Settings.AudioPath, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="2" Content="Browse" Click="BrowseAudio" />
+                    </Grid>
+                    <Grid Margin="0 6 0 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120" SharedSizeGroup="Label" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="SRT" VerticalAlignment="Center" Grid.Column="0" />
+                        <TextBox Grid.Column="1" Text="{Binding Settings.SrtPath, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="2" Content="Browse" Click="BrowseSrt" />
+                    </Grid>
+                    <Grid Margin="0 6 0 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="120" SharedSizeGroup="Label" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Clips Folder" VerticalAlignment="Center" Grid.Column="0" />
+                        <TextBox Grid.Column="1" Text="{Binding Settings.ClipsFolder, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="2" Content="Browse" Click="BrowseClipsFolder" />
+                    </Grid>
+                </StackPanel>
 
-        <TextBox Grid.Row="3" Grid.ColumnSpan="2" Text="{Binding LogText}" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Height="140" IsReadOnly="True" TextWrapping="Wrap" />
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Downloads & Preferences" FontSize="14" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}" Margin="4 0 4 6" />
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100" SharedSizeGroup="Label" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="120" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Clip URL" VerticalAlignment="Center" Grid.Column="0" />
+                        <TextBox Grid.Column="1" Text="{Binding Settings.ClipUrl, UpdateSourceTrigger=PropertyChanged}" />
+                        <Button Grid.Column="2" Content="Download" Click="DownloadClip" />
+                    </Grid>
+                    <Grid Margin="0 6 0 0">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="100" SharedSizeGroup="Label" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="Aspect" VerticalAlignment="Center" Grid.Column="0" />
+                        <ComboBox Grid.Column="1" ItemsSource="{Binding AspectOptions}" SelectedItem="{Binding Settings.AspectRatio}" />
+                        <StackPanel Orientation="Horizontal" Grid.Column="2">
+                            <TextBlock Text="FPS" VerticalAlignment="Center" Margin="0 0 6 0" />
+                            <ComboBox Width="90" ItemsSource="{Binding FpsOptions}" SelectedItem="{Binding Settings.Fps}" />
+                        </StackPanel>
+                    </Grid>
+                    <CheckBox Content="Use GPU when available" IsChecked="{Binding Settings.UseGpuWhenAvailable}" Margin="4 8 4 0" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <Border Grid.Row="2" Background="{StaticResource CardBackground}" CornerRadius="12" Padding="10" Margin="0 0 0 12" BorderBrush="#E1E6FF" BorderThickness="1">
+            <DataGrid x:Name="SegmentsGrid" ItemsSource="{Binding Segments}" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column"
+                      GridLinesVisibility="Horizontal" RowHeaderWidth="0" AlternatingRowBackground="#F7F8FF" AllowDrop="True"
+                      PreviewDragOver="SegmentsGrid_PreviewDragOver" Drop="SegmentsGrid_Drop">
+                <DataGrid.Resources>
+                    <Style TargetType="DataGridColumnHeader">
+                        <Setter Property="Background" Value="#EEF1FF" />
+                        <Setter Property="Foreground" Value="#1A1E3B" />
+                        <Setter Property="FontWeight" Value="SemiBold" />
+                        <Setter Property="Padding" Value="8" />
+                    </Style>
+                </DataGrid.Resources>
+                <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Index}" IsReadOnly="True" Width="40" />
+                    <DataGridTextColumn Header="Start" Binding="{Binding Start}" Width="120" />
+                    <DataGridTextColumn Header="End" Binding="{Binding End}" Width="120" />
+                    <DataGridTextColumn Header="Duration" Binding="{Binding Duration}" IsReadOnly="True" Width="90" />
+                    <DataGridTextColumn Header="Text" Binding="{Binding Text}" Width="*" />
+                    <DataGridTemplateColumn Header="Assigned Clip" Width="160">
+                        <DataGridTemplateColumn.CellTemplate>
+                            <DataTemplate>
+                                <Border Background="#F5F7FF" BorderBrush="#D9E1FF" BorderThickness="1" CornerRadius="4" Padding="6" AllowDrop="True">
+                                    <TextBlock Text="{Binding AssignedClip}" Foreground="#1A1E3B" />
+                                </Border>
+                            </DataTemplate>
+                        </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Clip URL" Binding="{Binding ClipUrl}" Width="200" />
+                    <DataGridComboBoxColumn Header="Fit Mode"
+                                              ItemsSource="{Binding DataContext.FitModeOptions, RelativeSource={RelativeSource AncestorType=Window}}"
+                                              SelectedItemBinding="{Binding FitMode, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                                              Width="120" />
+                    <DataGridTextColumn Header="Speed" Binding="{Binding Speed}" Width="80" />
+                </DataGrid.Columns>
+            </DataGrid>
+        </Border>
+
+        <Border Grid.Row="3" Background="{StaticResource CardBackground}" CornerRadius="12" Padding="8" BorderBrush="#E1E6FF" BorderThickness="1">
+            <StackPanel>
+                <TextBlock Text="Log" FontWeight="SemiBold" Foreground="{StaticResource SecondaryBrush}" Margin="4 0 4 6" />
+                <TextBox Text="{Binding LogText}" AcceptsReturn="True" VerticalScrollBarVisibility="Auto" Height="140" IsReadOnly="True" TextWrapping="Wrap" />
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>
