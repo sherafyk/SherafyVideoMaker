@@ -93,10 +93,14 @@
                             <ColumnDefinition Width="120" SharedSizeGroup="Label" />
                             <ColumnDefinition Width="*" />
                             <ColumnDefinition Width="120" />
+                            <ColumnDefinition Width="150" />
+                            <ColumnDefinition Width="180" />
                         </Grid.ColumnDefinitions>
                         <TextBlock Text="SRT" VerticalAlignment="Center" Grid.Column="0" />
                         <TextBox Grid.Column="1" Text="{Binding Settings.SrtPath, UpdateSourceTrigger=PropertyChanged}" />
                         <Button Grid.Column="2" Content="Browse" Click="BrowseSrt" />
+                        <Button Grid.Column="3" Content="Transcribe Audio" Click="TranscribeAudio" x:Name="TranscribeButton" />
+                        <TextBlock Grid.Column="4" Text="{Binding TranscriptionStatusText}" VerticalAlignment="Center" Foreground="#5A5A5A" />
                     </Grid>
                     <Grid Margin="0 6 0 0">
                         <Grid.ColumnDefinitions>

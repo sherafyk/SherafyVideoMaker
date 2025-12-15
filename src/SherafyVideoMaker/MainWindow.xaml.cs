@@ -4,6 +4,7 @@ using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -21,7 +22,9 @@ namespace SherafyVideoMaker
         private readonly SrtParser _srtParser = new();
         private readonly FfmpegService _ffmpegService = new();
         private readonly DownloadService _downloadService = new();
+        private readonly TranscriptionService _transcriptionService = new();
         private readonly LoggingService _logging;
+        private CancellationTokenSource? _transcriptionCts;
 
         public ObservableCollection<Segment> Segments { get; } = new();
         public ProjectSettings Settings { get; } = new();
@@ -42,6 +45,18 @@ namespace SherafyVideoMaker
             {
                 _logText = value;
                 PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(LogText)));
+            }
+        }
+
+        private string _transcriptionStatusText = string.Empty;
+
+        public string TranscriptionStatusText
+        {
+            get => _transcriptionStatusText;
+            set
+            {
+                _transcriptionStatusText = value;
+                PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(nameof(TranscriptionStatusText)));
             }
         }
 
@@ -174,6 +189,71 @@ namespace SherafyVideoMaker
 
         private void LoadSrt(object sender, RoutedEventArgs e)
         {
+            LoadSegmentsFromSrt();
+        }
+
+        private async void TranscribeAudio(object sender, RoutedEventArgs e)
+        {
+            if (string.IsNullOrWhiteSpace(Settings.AudioPath) || !File.Exists(Settings.AudioPath))
+            {
+                System.Windows.MessageBox.Show("Select a valid audio file before transcribing.");
+                return;
+            }
+
+            try
+            {
+                TranscribeButton.IsEnabled = false;
+                _transcriptionCts = new CancellationTokenSource();
+                TranscriptionStatusText = "Downloading model & transcribing...";
+                Log("Starting audio transcription to generate SRT.");
+
+                var srtPath = await _transcriptionService.TranscribeToSrtAsync(
+                    Settings.AudioPath,
+                    Settings.ModelsFolder,
+                    Settings.GeneratedSrtFolder,
+                    Log,
+                    _transcriptionCts.Token);
+
+                Settings.SrtPath = srtPath;
+                OnPropertyChanged(nameof(Settings));
+
+                TranscriptionStatusText = "Transcription complete. Loading segments...";
+                LoadSegmentsFromSrt();
+
+                TranscriptionStatusText = "Transcription ready.";
+            }
+            catch (OperationCanceledException)
+            {
+                TranscriptionStatusText = "Transcription canceled.";
+                Log("Transcription canceled by user.");
+            }
+            catch (Exception ex)
+            {
+                TranscriptionStatusText = "Transcription failed.";
+                System.Windows.MessageBox.Show("Failed to transcribe: " + ex.Message);
+                Log("Error while transcribing: " + ex);
+            }
+            finally
+            {
+                _transcriptionCts?.Dispose();
+                _transcriptionCts = null;
+                TranscribeButton.IsEnabled = true;
+            }
+        }
+
+        private async void ValidateSegments(object sender, RoutedEventArgs e)
+        {
+            await ValidateSegmentsAsync();
+        }
+
+        private void LoadSegmentsFromSrt()
+        {
+            if (string.IsNullOrWhiteSpace(Settings.SrtPath) || !File.Exists(Settings.SrtPath))
+            {
+                System.Windows.MessageBox.Show("Select a valid SRT file or transcribe the audio first.");
+                return;
+            }
+
             try
             {
                 Segments.Clear();
@@ -190,11 +270,6 @@ namespace SherafyVideoMaker
                 System.Windows.MessageBox.Show("Failed to load SRT: " + ex.Message);
                 Log("Error while loading SRT: " + ex);
             }
-        }
-
-        private async void ValidateSegments(object sender, RoutedEventArgs e)
-        {
-            await ValidateSegmentsAsync();
         }
 
         private async Task ValidateSegmentsAsync()
