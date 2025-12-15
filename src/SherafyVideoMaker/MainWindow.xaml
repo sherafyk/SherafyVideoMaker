@@ -201,8 +201,8 @@
                                 <ColumnDefinition Width="120" />
                             </Grid.ColumnDefinitions>
                             <TextBlock Text="Start / End" VerticalAlignment="Center" Grid.Column="0" />
-                            <StackPanel Orientation="Horizontal" Grid.Column="1" Spacing="6">
-                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal" Grid.Column="1">
+                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="0 0 6 0">
                                     <TextBlock Text="Start" Margin="0 0 4 0" VerticalAlignment="Center" />
                                     <TextBox Width="80" Text="{Binding Settings.BackgroundMusicStart, UpdateSourceTrigger=PropertyChanged}" />
                                 </StackPanel>
