@@ -223,7 +223,7 @@
                             <TextBlock Text="Speed" VerticalAlignment="Center" Margin="0 0 8 0" />
                             <Slider Width="200" Minimum="0.5" Maximum="2" SmallChange="0.05" TickFrequency="0.05" IsSnapToTickEnabled="True"
                                     Value="{Binding Settings.BackgroundMusicSpeed, UpdateSourceTrigger=PropertyChanged}" />
-                            <TextBlock Text="{Binding Settings.BackgroundMusicSpeed, StringFormat=F2}x" VerticalAlignment="Center" Margin="8 0 0 0" />
+                            <TextBlock Text="{Binding Settings.BackgroundMusicSpeed, StringFormat={}{0:F2}x}" VerticalAlignment="Center" Margin="8 0 0 0" />
                         </StackPanel>
                     </StackPanel>
                 </StackPanel>
