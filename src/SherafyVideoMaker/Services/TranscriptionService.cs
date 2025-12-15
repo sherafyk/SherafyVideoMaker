@@ -41,7 +41,7 @@ namespace SherafyVideoMaker.Services
             using var whisperFactory = WhisperFactory.FromPath(modelPath);
             await using var processor = whisperFactory.CreateBuilder().Build();
 
-            var segments = new List<WhisperSegment>();
+            var segments = new List<SegmentData>();
             await foreach (var segment in processor.ProcessAsync(audioPath, cancellationToken: cancellationToken)
                                .ConfigureAwait(false))
             {
@@ -99,7 +99,7 @@ namespace SherafyVideoMaker.Services
         }
 
         private static async Task WriteSrtAsync(
-            IReadOnlyList<WhisperSegment> segments,
+            IReadOnlyList<SegmentData> segments,
             string outputPath,
             CancellationToken cancellationToken)
         {
