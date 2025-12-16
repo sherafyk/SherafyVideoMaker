@@ -1,0 +1,7 @@
+{
+  "preset": "broll",
+  "keywords_per_block": 5,
+  "pause_gap_sec": 0.75,
+  "max_chars_per_block": 220,
+  "keywords_style": "stock"
+}
