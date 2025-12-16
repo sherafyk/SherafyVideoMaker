@@ -1,4 +1,0 @@
-transformers
-sentencepiece
-soundfile
-imageio-ffmpeg
