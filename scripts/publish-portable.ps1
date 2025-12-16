@@ -62,8 +62,6 @@ try {
         -c $Configuration `
         -r $Runtime `
         --self-contained true `
-        /p:PublishSingleFile=true `
-        /p:IncludeNativeLibrariesForSelfExtract=true `
         /p:PublishTrimmed=false `
         -o $portableRoot
 }
