@@ -11,6 +11,5 @@
   <ItemGroup>
     <PackageReference Include="System.Text.Json" Version="8.0.5" />
     <PackageReference Include="Whisper.net" Version="1.7.0" />
-    <PackageReference Include="Whisper.net.Runtime" Version="1.7.0" />
   </ItemGroup>
 </Project>
