@@ -40,10 +40,9 @@ namespace SherafyVideoMaker.Services
 
             using var whisperFactory = WhisperFactory.FromPath(modelPath);
             await using var processor = whisperFactory.CreateBuilder().Build();
-            await using var audioStream = File.OpenRead(audioPath);
 
             var segments = new List<SegmentData>();
-            await foreach (var segment in processor.ProcessAsync(audioStream, cancellationToken: cancellationToken)
+            await foreach (var segment in processor.ProcessAsync(audioPath, cancellationToken: cancellationToken)
                                .ConfigureAwait(false))
             {
                 segments.Add(segment);
